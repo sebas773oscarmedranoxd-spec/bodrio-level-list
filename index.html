@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bodrio Level List (BLL)</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase CDN para la base de datos en la nube -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <header class="navbar">
+        <h1 class="logo">BLL <span>Bodrio Level List</span></h1>
+        <nav>
+            <button class="nav-btn active" onclick="switchTab('main')">Main (Top 100)</button>
+            <button class="nav-btn" onclick="switchTab('extended')">Extended</button>
+            <button class="nav-btn" onclick="switchTab('legacy')">Legacy</button>
+            <button class="nav-btn" onclick="switchTab('hot')">HOT</button>
+            <button class="nav-btn" onclick="switchTab('players')">Top Players</button>
+            <button class="nav-btn" onclick="switchTab('verifiers')">Verifiers</button>
+            <button class="nav-btn" onclick="switchTab('decorators')">Decorators</button>
+            <button class="admin-login-btn" onclick="openAdminModal()">🔒 Admin</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="list-section">
+            <h2 id="list-title">Main List (Top 1-100)</h2>
+            <div id="levels-container" class="levels-list">
+                <!-- Se cargan los niveles desde la base de datos global -->
+            </div>
+        </section>
+
+        <aside class="details-panel">
+            <h3 id="det-title">Selecciona un nivel</h3>
+            <p class="creator-info">Creador: <span id="det-creator">-</span></p>
+            <p class="creator-info">Verificador: <span id="det-verifier">-</span></p>
+            
+            <div style="margin: 0.8rem 0;">
+                <span id="det-status" class="tag">-</span>
+            </div>
+
+            <div class="video-wrapper">
+                <iframe id="det-video" src="" frameborder="0" allowfullscreen></iframe>
+            </div>
+
+            <div class="stats">
+                <p><strong>Puntos:</strong> <span id="det-points" class="pts-text">0</span> pts</p>
+                <p><strong>ID de GD:</strong> <span id="det-gdid">#---</span></p>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Modal de Autenticación de Admin (Solo para ti) -->
+    <div id="admin-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAdminModal()">&times;</span>
+            <div id="login-form-wrapper">
+                <h3>Panel de Administración BLL</h3>
+                <p>Ingresa la contraseña para añadir/editar niveles:</p>
+                <input type="password" id="admin-pass-input" placeholder="Contraseña de Admin">
+                <button onclick="loginAdmin()">Entrar</button>
+            </div>
+            <div id="admin-panel-wrapper" style="display:none;">
+                <h3>Añadir Nuevo Nivel a BLL</h3>
+                <form id="add-level-form" onsubmit="saveLevel(event)">
+                    <input type="text" id="lvl-name" placeholder="Nombre del Nivel" required>
+                    <input type="text" id="lvl-creator" placeholder="Creador" required>
+                    <input type="text" id="lvl-verifier" placeholder="Verificador (o N/A)">
+                    <select id="lvl-status" required>
+                        <option value="Legal">Legal (Otorga Puntos)</option>
+                        <option value="Assisted">Assisted (Speedhack / Noclip - 0 Pts)</option>
+                    </select>
+                    <select id="lvl-category" required>
+                        <option value="main">Main List (Top 1-100)</option>
+                        <option value="extended">Extended</option>
+                        <option value="legacy">Legacy</option>
+                        <option value="hot">HOT List</option>
+                        <option value="decorators">Decorators</option>
+                    </select>
+                    <input type="number" id="lvl-pos" min="1" placeholder="Posición en el Top" required>
+                    <input type="text" id="lvl-gdid" placeholder="ID de GD" required>
+                    <input type="url" id="lvl-video" placeholder="Link de YouTube" required>
+                    <button type="submit" class="save-btn">Guardar Nivel Globalmente</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
