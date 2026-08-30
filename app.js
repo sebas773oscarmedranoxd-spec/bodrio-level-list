@@ -14,7 +14,7 @@ const dataStore = {
             name: 'Worry',
             creator: 'Tú',
             verifier: 'TopPlayer',
-            videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // Cambiar por tu video de YouTube
+            videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
             tag: 'LEGAL',
             tab: 'main'
         },
@@ -235,7 +235,8 @@ function selectItem(item) {
     
     // Highlight selected card
     const cards = Array.from(listContainer.children);
-    const activeIndex = dataStore[getItemCategory()].findIndex(i => i.id === item.id);
+    const category = getItemCategory();
+    const activeIndex = dataStore[category].findIndex(i => i.id === item.id);
     if (cards[activeIndex]) cards[activeIndex].classList.add('active');
 
     if (['main', 'extended', 'legacy', 'hot'].includes(currentTab)) {
@@ -243,7 +244,6 @@ function selectItem(item) {
         if (item.tag === 'ASSISTED') badgeClass = 'badge-assisted';
         if (item.tag === 'IMPOSSIBLE') badgeClass = 'badge-impossible';
 
-        // Fix video URL format if pasted standard YouTube URL
         let embedUrl = item.videoUrl;
         if (embedUrl.includes('watch?v=')) {
             embedUrl = embedUrl.replace('watch?v=', 'embed/');
@@ -312,7 +312,6 @@ function initAdminModal() {
 
     adminLoginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        // Dynamic or default password check
         if (adminPassInput.value.length > 0) {
             isAdminLoggedIn = true;
             adminAuthView.classList.add('hidden');
@@ -337,6 +336,9 @@ function renderAdminPanel(tab) {
         adminContentArea.innerHTML = `
             <h3>Añadir / Editar Decorador</h3>
             <form id="form-decorator">
+                <label>Posición en el top:</label>
+                <input type="number" id="dec-rank" placeholder="Ej: 1" required>
+
                 <label>Nombre del Decorador:</label>
                 <input type="text" id="dec-name" placeholder="Ej: Spu7Nix" required>
 
@@ -354,6 +356,9 @@ function renderAdminPanel(tab) {
         adminContentArea.innerHTML = `
             <h3>Añadir / Editar Verificador</h3>
             <form id="form-verifier">
+                <label>Posición en el top:</label>
+                <input type="number" id="ver-rank" placeholder="Ej: 1" required>
+
                 <label>Nombre del Verificador:</label>
                 <input type="text" id="ver-name" placeholder="Ej: Zoink" required>
 
@@ -380,11 +385,11 @@ function renderAdminPanel(tab) {
         adminContentArea.innerHTML = `
             <h3>Añadir / Editar Top Player</h3>
             <form id="form-top-player">
+                <label>Posición en el top:</label>
+                <input type="number" id="player-rank" placeholder="Ej: 1" required>
+
                 <label>Nombre del Jugador:</label>
                 <input type="text" id="player-name" placeholder="Ej: Diamond" required>
-
-                <label>Rank / Posición Global:</label>
-                <input type="number" id="player-rank" placeholder="Ej: 1" required>
 
                 <label>Player Points:</label>
                 <input type="number" id="player-points" placeholder="Ej: 5000" required>
@@ -409,6 +414,9 @@ function renderAdminPanel(tab) {
         adminContentArea.innerHTML = `
             <h3>Añadir / Editar Nivel (${tab.toUpperCase()})</h3>
             <form id="form-level">
+                <label>Posición en el top:</label>
+                <input type="number" id="level-rank" placeholder="Ej: 1" required>
+
                 <label>Nombre del Nivel:</label>
                 <input type="text" id="level-name" placeholder="Ej: Worry" required>
 
@@ -435,12 +443,21 @@ function renderAdminPanel(tab) {
     }
 }
 
-// FORM HANDLERS
+// FORM HANDLERS WITH VALIDATION
 function handleAddLevel(e) {
     e.preventDefault();
+    const desiredRank = parseInt(document.getElementById('level-rank').value);
+    const currentList = dataStore.levels.filter(l => l.tab === currentTab);
+    const maxRankAllowed = currentList.length + 1;
+
+    if (desiredRank < 1 || desiredRank > maxRankAllowed) {
+        alert("No se puede poner ese numero, pon otro!");
+        return;
+    }
+
     const newLevel = {
         id: 'l' + (dataStore.levels.length + 1),
-        rank: dataStore.levels.filter(l => l.tab === currentTab).length + 1,
+        rank: desiredRank,
         name: document.getElementById('level-name').value,
         creator: document.getElementById('level-creator').value,
         verifier: document.getElementById('level-verifier').value,
@@ -448,16 +465,27 @@ function handleAddLevel(e) {
         tag: document.getElementById('level-tag').value,
         tab: currentTab
     };
+
     dataStore.levels.push(newLevel);
+    dataStore.levels.sort((a, b) => a.rank - b.rank);
+
     renderContent();
     adminModal.classList.add('hidden');
 }
 
 function handleAddPlayer(e) {
     e.preventDefault();
+    const desiredRank = parseInt(document.getElementById('player-rank').value);
+    const maxRankAllowed = dataStore.topPlayers.length + 1;
+
+    if (desiredRank < 1 || desiredRank > maxRankAllowed) {
+        alert("No se puede poner ese numero, pon otro!");
+        return;
+    }
+
     const newPlayer = {
         id: 'p' + (dataStore.topPlayers.length + 1),
-        rank: parseInt(document.getElementById('player-rank').value),
+        rank: desiredRank,
         name: document.getElementById('player-name').value,
         points: parseInt(document.getElementById('player-points').value),
         hardest: document.getElementById('player-hardest').value,
@@ -465,16 +493,27 @@ function handleAddPlayer(e) {
         beaten: parseInt(document.getElementById('player-beaten').value),
         media: document.getElementById('player-media').value
     };
+
     dataStore.topPlayers.push(newPlayer);
+    dataStore.topPlayers.sort((a, b) => a.rank - b.rank);
+
     renderContent();
     adminModal.classList.add('hidden');
 }
 
 function handleAddVerifier(e) {
     e.preventDefault();
+    const desiredRank = parseInt(document.getElementById('ver-rank').value);
+    const maxRankAllowed = dataStore.verifiers.length + 1;
+
+    if (desiredRank < 1 || desiredRank > maxRankAllowed) {
+        alert("No se puede poner ese numero, pon otro!");
+        return;
+    }
+
     const newVerifier = {
         id: 'v' + (dataStore.verifiers.length + 1),
-        rank: dataStore.verifiers.length + 1,
+        rank: desiredRank,
         name: document.getElementById('ver-name').value,
         points: parseInt(document.getElementById('ver-points').value),
         hardest: document.getElementById('ver-hardest').value,
@@ -482,21 +521,35 @@ function handleAddVerifier(e) {
         bllHardest: document.getElementById('ver-bll-hardest').value,
         completions: parseInt(document.getElementById('ver-completions').value)
     };
+
     dataStore.verifiers.push(newVerifier);
+    dataStore.verifiers.sort((a, b) => a.rank - b.rank);
+
     renderContent();
     adminModal.classList.add('hidden');
 }
 
 function handleAddDecorator(e) {
     e.preventDefault();
+    const desiredRank = parseInt(document.getElementById('dec-rank').value);
+    const maxRankAllowed = dataStore.decorators.length + 1;
+
+    if (desiredRank < 1 || desiredRank > maxRankAllowed) {
+        alert("No se puede poner ese numero, pon otro!");
+        return;
+    }
+
     const newDecorator = {
         id: 'd' + (dataStore.decorators.length + 1),
-        rank: dataStore.decorators.length + 1,
+        rank: desiredRank,
         name: document.getElementById('dec-name').value,
         points: parseInt(document.getElementById('dec-points').value),
         nametag: document.getElementById('dec-nametag').value
     };
+
     dataStore.decorators.push(newDecorator);
+    dataStore.decorators.sort((a, b) => a.rank - b.rank);
+
     renderContent();
     adminModal.classList.add('hidden');
 }
