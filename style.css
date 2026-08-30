@@ -1,0 +1,50 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { background-color: #0f0f12; color: #e1e1e6; }
+
+.navbar {
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #16161a; padding: 1rem 2rem; border-bottom: 2px solid #242429;
+}
+.logo span { color: #7f5af0; font-size: 0.85rem; display: block; }
+nav { display: flex; gap: 0.5rem; align-items: center; }
+
+.nav-btn {
+    color: #94a1b2; background: none; border: none; padding: 0.5rem 0.8rem;
+    font-weight: 600; cursor: pointer; border-radius: 4px; transition: 0.2s;
+}
+.nav-btn:hover, .nav-btn.active { color: #fff; background-color: #242429; }
+
+.admin-login-btn {
+    background-color: #7f5af0; color: #fff; border: none; padding: 0.5rem 1rem;
+    border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 1rem;
+}
+
+.container { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; max-width: 1300px; margin: 2rem auto; padding: 0 1rem; }
+.levels-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; max-height: 75vh; overflow-y: auto; }
+
+.level-card {
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #16161a; padding: 0.9rem 1.2rem; border-radius: 6px;
+    cursor: pointer; border: 1px solid #242429; transition: 0.2s;
+}
+.level-card:hover { border-color: #7f5af0; transform: translateX(4px); background-color: #1c1c21; }
+.level-rank { font-weight: bold; color: #7f5af0; font-size: 1.1rem; width: 60px; }
+.level-info { flex-grow: 1; }
+.level-info small { color: #94a1b2; }
+
+.tag { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+.tag-legal { background-color: #2cb67d; color: #010101; }
+.tag-assisted { background-color: #ff8906; color: #010101; }
+
+.details-panel { background-color: #16161a; padding: 1.5rem; border-radius: 8px; border: 1px solid #242429; position: sticky; top: 2rem; }
+.video-wrapper { margin: 1rem 0; position: relative; padding-bottom: 56.25%; height: 0; background: #000; border-radius: 6px; overflow: hidden; }
+.video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.pts-text { color: #2cb67d; font-weight: bold; }
+
+/* Modal de Admin */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+.modal-content { background: #16161a; padding: 2rem; border-radius: 8px; border: 1px solid #7f5af0; width: 90%; max-width: 500px; position: relative; }
+.close-btn { position: absolute; top: 10px; right: 15px; color: #aaa; font-size: 24px; cursor: pointer; }
+.modal-content input, .modal-content select { width: 100%; padding: 0.7rem; margin: 0.5rem 0; background: #0f0f12; border: 1px solid #242429; color: #fff; border-radius: 4px; }
+.modal-content button { width: 100%; padding: 0.8rem; background: #7f5af0; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 0.5rem; border-radius: 4px; }
+.save-btn { background: #2cb67d !important; color: #000 !important; }
