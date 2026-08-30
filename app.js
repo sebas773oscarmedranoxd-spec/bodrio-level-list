@@ -1,5 +1,5 @@
 // La contraseña que tú decidas para ser el único Admin
-const MASTER_ADMIN_PASS = "bll2026admin"; 
+const MASTER_ADMIN_PASS = "G7!mR9#pL2$xQ4&wT8@vK"; 
 
 // Datos locales por defecto si aún no conectas Supabase
 let levelsDB = [
