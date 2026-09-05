@@ -1,82 +1,46 @@
-// BLL SYSTEM APPLICATION CODE
+// CONFIGURACIÓN SUPABASE
+const SUPABASE_URL = 'https://odplxttonqezginqqtsh.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_VbXEFCQJvfFhPR0PCRurSQ_Gqpkayr1';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Datos por defecto (se usan solo la primera vez si la memoria está vacía)
-const defaultData = {
-    levels: [
-        {
-            id: 'l1',
-            rank: 1,
-            name: 'Worry',
-            creator: 'Tú',
-            verifier: 'TopPlayer',
-            videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-            tag: 'LEGAL',
-            tab: 'main'
-        },
-        {
-            id: 'l2',
-            rank: 2,
-            name: 'Layout Imposible',
-            creator: 'LayoutGod',
-            verifier: 'N/A',
-            videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-            tag: 'ASSISTED',
-            tab: 'main'
-        }
-    ],
-    topPlayers: [
-        {
-            id: 'p1',
-            rank: 1,
-            name: 'Diamond',
-            points: 5000,
-            hardest: 'Acheron',
-            bllHardest: 'Layout Imposible',
-            beaten: 12,
-            media: 'https://youtube.com'
-        }
-    ],
-    verifiers: [
-        {
-            id: 'v1',
-            rank: 1,
-            name: 'Zoink',
-            points: 3200,
-            hardest: 'Tidal Wave',
-            nextHardest: 'Acheron',
-            bllHardest: 'Worry',
-            completions: 5
-        }
-    ],
-    decorators: [
-        {
-            id: 'd1',
-            rank: 1,
-            name: 'Spu7Nix',
-            points: 1500,
-            nametag: 'Spu7NixGD'
-        }
-    ]
+// Estructura de datos global
+let dataStore = {
+    levels: [],
+    topPlayers: [],
+    verifiers: [],
+    decorators: []
 };
 
-// Carga los datos guardados en LocalStorage o usa los predeterminados
-let dataStore = loadDataStore();
+// Cargar datos en vivo desde la nube (Supabase)
+async function loadDataStore() {
+    try {
+        const { data, error } = await supabase
+            .from('bll_data')
+            .select('data')
+            .eq('id', 1)
+            .single();
 
-function loadDataStore() {
-    const savedData = localStorage.getItem('bll_data_store');
-    if (savedData) {
-        try {
-            return JSON.parse(savedData);
-        } catch (e) {
-            console.error('Error al cargar datos guardados:', e);
+        if (error) throw error;
+        if (data && data.data) {
+            dataStore = data.data;
         }
+    } catch (e) {
+        console.error('Error al cargar desde Supabase:', e);
     }
-    return defaultData;
 }
 
-// Función para guardar automáticamente en LocalStorage
-function saveDataStore() {
-    localStorage.setItem('bll_data_store', JSON.stringify(dataStore));
+// Guardar cambios directamente en Supabase
+async function saveDataStore() {
+    try {
+        const { error } = await supabase
+            .from('bll_data')
+            .update({ data: dataStore })
+            .eq('id', 1);
+
+        if (error) console.error('Error guardando en Supabase:', error);
+    } catch (e) {
+        console.error('Error en saveDataStore:', e);
+    }
 }
 
 // State Management
@@ -114,7 +78,8 @@ const tabTitles = {
 };
 
 // INITIALIZATION
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadDataStore(); // Carga de datos desde la nube antes de renderizar
     initTabs();
     initAdminModal();
     initClickOutside();
@@ -183,7 +148,6 @@ function shiftRanksOnInsert(targetList, newRank, ignoreId = null) {
     });
 }
 
-// REAJUSTAR POSICIONES TRAS ELIMINAR O EDITAR
 function reorderRanks(targetList) {
     targetList.sort((a, b) => a.rank - b.rank);
     targetList.forEach((item, index) => {
@@ -197,19 +161,19 @@ function renderContent() {
     let items = [];
 
     if (['main', 'extended', 'legacy', 'hot'].includes(currentTab)) {
-        items = dataStore.levels.filter(l => l.tab === currentTab);
+        items = dataStore.levels ? dataStore.levels.filter(l => l.tab === currentTab) : [];
         items.sort((a, b) => a.rank - b.rank);
         renderLevelList(items);
     } else if (currentTab === 'top-players') {
-        items = dataStore.topPlayers;
+        items = dataStore.topPlayers || [];
         items.sort((a, b) => a.rank - b.rank);
         renderPlayersList(items);
     } else if (currentTab === 'verifiers') {
-        items = dataStore.verifiers;
+        items = dataStore.verifiers || [];
         items.sort((a, b) => a.rank - b.rank);
         renderVerifiersList(items);
     } else if (currentTab === 'decorators') {
-        items = dataStore.decorators;
+        items = dataStore.decorators || [];
         items.sort((a, b) => a.rank - b.rank);
         renderDecoratorsList(items);
     }
@@ -477,7 +441,7 @@ function renderLevelForm(item, currentTab) {
         </form>
     `;
 
-    document.getElementById('admin-level-form').addEventListener('submit', (e) => {
+    document.getElementById('admin-level-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('level-name').value;
         const rank = parseInt(document.getElementById('level-rank').value);
@@ -486,6 +450,7 @@ function renderLevelForm(item, currentTab) {
         const videoUrl = document.getElementById('level-video').value;
         const tag = document.getElementById('level-tag').value;
 
+        if (!dataStore.levels) dataStore.levels = [];
         const currentCategoryLevels = dataStore.levels.filter(l => l.tab === currentTab);
 
         if (isEdit) {
@@ -513,17 +478,17 @@ function renderLevelForm(item, currentTab) {
             dataStore.levels.push(newLevel);
         }
 
-        saveDataStore(); // ¡Guardar cambios permanentemente!
+        await saveDataStore(); // Se guarda en la nube de Supabase
         renderContent();
         adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', () => {
+        document.getElementById('btn-delete-item').addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar "${item.name}"?`)) {
                 dataStore.levels = dataStore.levels.filter(l => l.id !== item.id);
                 reorderRanks(dataStore.levels.filter(l => l.tab === currentTab));
-                saveDataStore(); // ¡Guardar cambios permanentemente!
+                await saveDataStore();
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -564,7 +529,7 @@ function renderPlayerForm(item) {
         </form>
     `;
 
-    document.getElementById('admin-player-form').addEventListener('submit', (e) => {
+    document.getElementById('admin-player-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('player-name').value;
         const rank = parseInt(document.getElementById('player-rank').value);
@@ -573,6 +538,8 @@ function renderPlayerForm(item) {
         const bllHardest = document.getElementById('player-bll-hardest').value;
         const beaten = parseInt(document.getElementById('player-beaten').value);
         const media = document.getElementById('player-media').value;
+
+        if (!dataStore.topPlayers) dataStore.topPlayers = [];
 
         if (isEdit) {
             if (item.rank !== rank) {
@@ -593,17 +560,17 @@ function renderPlayerForm(item) {
             });
         }
 
-        saveDataStore(); // ¡Guardar cambios permanentemente!
+        await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', () => {
+        document.getElementById('btn-delete-item').addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.topPlayers = dataStore.topPlayers.filter(p => p.id !== item.id);
                 reorderRanks(dataStore.topPlayers);
-                saveDataStore(); // ¡Guardar cambios permanentemente!
+                await saveDataStore();
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -638,9 +605,10 @@ function renderVerifierForm(item) {
         </form>
     `;
 
-    document.getElementById('admin-verifier-form').addEventListener('submit', (e) => {
+    document.getElementById('admin-verifier-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const rank = parseInt(document.getElementById('ver-rank').value);
+        if (!dataStore.verifiers) dataStore.verifiers = [];
 
         if (isEdit) {
             if (item.rank !== rank) {
@@ -662,17 +630,17 @@ function renderVerifierForm(item) {
                 completions: parseInt(document.getElementById('ver-completions').value)
             });
         }
-        saveDataStore(); // ¡Guardar cambios permanentemente!
+        await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', () => {
+        document.getElementById('btn-delete-item').addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.verifiers = dataStore.verifiers.filter(v => v.id !== item.id);
                 reorderRanks(dataStore.verifiers);
-                saveDataStore(); // ¡Guardar cambios permanentemente!
+                await saveDataStore();
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -704,9 +672,10 @@ function renderDecoratorForm(item) {
         </form>
     `;
 
-    document.getElementById('admin-decorator-form').addEventListener('submit', (e) => {
+    document.getElementById('admin-decorator-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const rank = parseInt(document.getElementById('dec-rank').value);
+        if (!dataStore.decorators) dataStore.decorators = [];
 
         if (isEdit) {
             if (item.rank !== rank) {
@@ -726,17 +695,17 @@ function renderDecoratorForm(item) {
                 nametag: document.getElementById('dec-tag').value
             });
         }
-        saveDataStore(); // ¡Guardar cambios permanentemente!
+        await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', () => {
+        document.getElementById('btn-delete-item').addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.decorators = dataStore.decorators.filter(d => d.id !== item.id);
                 reorderRanks(dataStore.decorators);
-                saveDataStore(); // ¡Guardar cambios permanentemente!
+                await saveDataStore();
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
