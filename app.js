@@ -22,7 +22,12 @@ async function loadDataStore() {
 
         if (error) throw error;
         if (data && data.data) {
-            dataStore = data.data;
+            dataStore = {
+                levels: data.data.levels || [],
+                topPlayers: data.data.topPlayers || [],
+                verifiers: data.data.verifiers || [],
+                decorators: data.data.decorators || []
+            };
         }
     } catch (e) {
         console.error('Error al cargar desde Supabase:', e);
@@ -41,6 +46,14 @@ async function saveDataStore() {
     } catch (e) {
         console.error('Error en saveDataStore:', e);
     }
+}
+
+// Helper para formatear URLs de YouTube
+function formatYouTubeEmbedUrl(url) {
+    if (!url) return '';
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
 }
 
 // State Management
@@ -79,7 +92,7 @@ const tabTitles = {
 
 // INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadDataStore(); // Carga de datos desde la nube antes de renderizar
+    await loadDataStore();
     initTabs();
     initAdminModal();
     initClickOutside();
@@ -122,6 +135,7 @@ function initTabs() {
             sectionTitle.textContent = tabTitles[currentTab] || 'Bodrio Level List';
             selectedItemId = null;
             editingItemId = null;
+            detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
             
             renderContent();
             
@@ -181,7 +195,7 @@ function renderContent() {
     if (items.length === 0) {
         listContainer.innerHTML = '<p style="color:#64748b; padding:20px;">No hay datos registrados en esta sección aún.</p>';
         detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
-    } else if (!selectedItemId) {
+    } else if (!selectedItemId && items.length > 0) {
         selectItem(items[0]);
     }
 }
@@ -280,6 +294,7 @@ function renderDecoratorsList(items) {
 }
 
 function selectItem(item) {
+    if (!item) return;
     selectedItemId = item.id;
     
     const category = getItemCategory();
@@ -295,10 +310,7 @@ function selectItem(item) {
         if (item.tag === 'ASSISTED') badgeClass = 'badge-assisted';
         if (item.tag === 'IMPOSSIBLE') badgeClass = 'badge-impossible';
 
-        let embedUrl = item.videoUrl || '';
-        if (embedUrl.includes('watch?v=')) {
-            embedUrl = embedUrl.replace('watch?v=', 'embed/');
-        }
+        let embedUrl = formatYouTubeEmbedUrl(item.videoUrl);
 
         detailCard.innerHTML = `
             <h3>#${item.rank} - ${item.name}</h3>
@@ -478,7 +490,8 @@ function renderLevelForm(item, currentTab) {
             dataStore.levels.push(newLevel);
         }
 
-        await saveDataStore(); // Se guarda en la nube de Supabase
+        reorderRanks(currentCategoryLevels);
+        await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
     });
@@ -560,6 +573,7 @@ function renderPlayerForm(item) {
             });
         }
 
+        reorderRanks(dataStore.topPlayers);
         await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
@@ -630,6 +644,7 @@ function renderVerifierForm(item) {
                 completions: parseInt(document.getElementById('ver-completions').value)
             });
         }
+        reorderRanks(dataStore.verifiers);
         await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
@@ -695,6 +710,7 @@ function renderDecoratorForm(item) {
                 nametag: document.getElementById('dec-tag').value
             });
         }
+        reorderRanks(dataStore.decorators);
         await saveDataStore();
         renderContent();
         adminModal.classList.add('hidden');
