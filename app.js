@@ -154,6 +154,23 @@ function getItemCategory() {
     if (currentTab === 'decorators') return 'decorators';
 }
 
+// REORDENAR POSICIONES AUTOMÁTICAMENTE
+function shiftRanksOnInsert(targetList, newRank, ignoreId = null) {
+    targetList.forEach(item => {
+        if (item.id !== ignoreId && item.rank >= newRank) {
+            item.rank += 1;
+        }
+    });
+}
+
+// REAJUSTAR POSICIONES TRAS ELIMINAR O EDITAR
+function reorderRanks(targetList) {
+    targetList.sort((a, b) => a.rank - b.rank);
+    targetList.forEach((item, index) => {
+        item.rank = index + 1;
+    });
+}
+
 // RENDER LIST CONTENT
 function renderContent() {
     listContainer.innerHTML = '';
@@ -449,7 +466,12 @@ function renderLevelForm(item, currentTab) {
         const videoUrl = document.getElementById('level-video').value;
         const tag = document.getElementById('level-tag').value;
 
+        const currentCategoryLevels = dataStore.levels.filter(l => l.tab === currentTab);
+
         if (isEdit) {
+            if (item.rank !== rank) {
+                shiftRanksOnInsert(currentCategoryLevels, rank, item.id);
+            }
             item.name = name;
             item.rank = rank;
             item.creator = creator;
@@ -457,6 +479,7 @@ function renderLevelForm(item, currentTab) {
             item.videoUrl = videoUrl;
             item.tag = tag;
         } else {
+            shiftRanksOnInsert(currentCategoryLevels, rank);
             const newLevel = {
                 id: 'l' + Date.now(),
                 rank,
@@ -478,6 +501,7 @@ function renderLevelForm(item, currentTab) {
         document.getElementById('btn-delete-item').addEventListener('click', () => {
             if (confirm(`¿Seguro que deseas eliminar "${item.name}"?`)) {
                 dataStore.levels = dataStore.levels.filter(l => l.id !== item.id);
+                reorderRanks(dataStore.levels.filter(l => l.tab === currentTab));
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -529,6 +553,9 @@ function renderPlayerForm(item) {
         const media = document.getElementById('player-media').value;
 
         if (isEdit) {
+            if (item.rank !== rank) {
+                shiftRanksOnInsert(dataStore.topPlayers, rank, item.id);
+            }
             item.name = name;
             item.rank = rank;
             item.points = points;
@@ -537,6 +564,7 @@ function renderPlayerForm(item) {
             item.beaten = beaten;
             item.media = media;
         } else {
+            shiftRanksOnInsert(dataStore.topPlayers, rank);
             dataStore.topPlayers.push({
                 id: 'p' + Date.now(),
                 rank, name, points, hardest, bllHardest, beaten, media
@@ -551,6 +579,7 @@ function renderPlayerForm(item) {
         document.getElementById('btn-delete-item').addEventListener('click', () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.topPlayers = dataStore.topPlayers.filter(p => p.id !== item.id);
+                reorderRanks(dataStore.topPlayers);
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -587,16 +616,22 @@ function renderVerifierForm(item) {
 
     document.getElementById('admin-verifier-form').addEventListener('submit', (e) => {
         e.preventDefault();
+        const rank = parseInt(document.getElementById('ver-rank').value);
+
         if (isEdit) {
+            if (item.rank !== rank) {
+                shiftRanksOnInsert(dataStore.verifiers, rank, item.id);
+            }
             item.name = document.getElementById('ver-name').value;
-            item.rank = parseInt(document.getElementById('ver-rank').value);
+            item.rank = rank;
             item.points = parseInt(document.getElementById('ver-points').value);
             item.hardest = document.getElementById('ver-hardest').value;
             item.completions = parseInt(document.getElementById('ver-completions').value);
         } else {
+            shiftRanksOnInsert(dataStore.verifiers, rank);
             dataStore.verifiers.push({
                 id: 'v' + Date.now(),
-                rank: parseInt(document.getElementById('ver-rank').value),
+                rank,
                 name: document.getElementById('ver-name').value,
                 points: parseInt(document.getElementById('ver-points').value),
                 hardest: document.getElementById('ver-hardest').value,
@@ -611,6 +646,7 @@ function renderVerifierForm(item) {
         document.getElementById('btn-delete-item').addEventListener('click', () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.verifiers = dataStore.verifiers.filter(v => v.id !== item.id);
+                reorderRanks(dataStore.verifiers);
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -644,15 +680,21 @@ function renderDecoratorForm(item) {
 
     document.getElementById('admin-decorator-form').addEventListener('submit', (e) => {
         e.preventDefault();
+        const rank = parseInt(document.getElementById('dec-rank').value);
+
         if (isEdit) {
+            if (item.rank !== rank) {
+                shiftRanksOnInsert(dataStore.decorators, rank, item.id);
+            }
             item.name = document.getElementById('dec-name').value;
-            item.rank = parseInt(document.getElementById('dec-rank').value);
+            item.rank = rank;
             item.points = parseInt(document.getElementById('dec-points').value);
             item.nametag = document.getElementById('dec-tag').value;
         } else {
+            shiftRanksOnInsert(dataStore.decorators, rank);
             dataStore.decorators.push({
                 id: 'd' + Date.now(),
-                rank: parseInt(document.getElementById('dec-rank').value),
+                rank,
                 name: document.getElementById('dec-name').value,
                 points: parseInt(document.getElementById('dec-points').value),
                 nametag: document.getElementById('dec-tag').value
@@ -666,10 +708,11 @@ function renderDecoratorForm(item) {
         document.getElementById('btn-delete-item').addEventListener('click', () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.decorators = dataStore.decorators.filter(d => d.id !== item.id);
+                reorderRanks(dataStore.decorators);
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
             }
         });
     }
-} 
+}
