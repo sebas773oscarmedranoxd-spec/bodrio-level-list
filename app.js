@@ -12,8 +12,8 @@ const dataStore = {
         {
             id: 'l1',
             rank: 1,
-            name: 'Worry',
-            creator: 'Tú',
+            name: 'Crazy Time',
+            creator: 'Fedorkaz',
             verifier: 'TopPlayer',
             videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
             tag: 'LEGAL',
@@ -34,7 +34,7 @@ const dataStore = {
         {
             id: 'p1',
             rank: 1,
-            name: 'Diamond',
+            name: 'K4ttie',
             points: 5000,
             hardest: 'Acheron',
             bllHardest: 'Layout Imposible',
@@ -107,8 +107,9 @@ function initClickOutside() {
         const isClickInsideCard = e.target.closest('.list-card');
         const isClickInsideAdmin = e.target.closest('#admin-modal') || e.target.closest('#open-admin-btn');
         const isClickInsideNav = e.target.closest('.nav-tab');
+        const isClickInsideDetail = e.target.closest('#details-sidebar');
 
-        if (!isClickInsideCard && !isClickInsideAdmin && !isClickInsideNav) {
+        if (!isClickInsideCard && !isClickInsideAdmin && !isClickInsideNav && !isClickInsideDetail) {
             clearSelection();
         }
     });
@@ -299,8 +300,8 @@ function selectItem(item) {
         }
 
         detailCard.innerHTML = `
-            <h3>#${item.rank} -${item.name}</h3>
-            <p class="meta-text">Creador: ${item.creator} \vert{} Verificador:${item.verifier}</p>
+            <h3>#${item.rank} - ${item.name}</h3>
+            <p class="meta-text">Creador: ${item.creator} | Verificador: ${item.verifier}</p>
             <span class="badge ${badgeClass}">${item.tag}</span>
             <div class="video-wrapper">
                 <iframe src="${embedUrl}" allowfullscreen></iframe>
@@ -308,7 +309,7 @@ function selectItem(item) {
         `;
     } else if (currentTab === 'top-players') {
         detailCard.innerHTML = `
-            <h3>#${item.rank}${item.name}</h3>
+            <h3>#${item.rank} ${item.name}</h3>
             <p class="meta-text">Jugador Destacado BLL</p>
             <div class="stats-grid">
                 <div class="stat-box"><div class="label">Player Points</div><div class="value">${item.points}</div></div>
@@ -320,9 +321,61 @@ function selectItem(item) {
         `;
     } else if (currentTab === 'verifiers') {
         detailCard.innerHTML = `
-            <h3>#${item.rank}${item.name}</h3>
+            <h3>#${item.rank} ${item.name}</h3>
             <p class="meta-text">Verificador Oficial BLL</p>
             <div class="stats-grid">
                 <div class="stat-box"><div class="label">Verifier Points</div><div class="value">${item.points}</div></div>
                 <div class="stat-box"><div class="label">Niveles BLL</div><div class="value">${item.completions}</div></div>
                 <div class="stat-box"><div class="label">Hardest</div><div class="value">${item.hardest}</div></div>
+            </div>
+        `;
+    } else if (currentTab === 'decorators') {
+        detailCard.innerHTML = `
+            <h3>#${item.rank} ${item.name}</h3>
+            <p class="meta-text">Decorador BLL</p>
+            <div class="stats-grid">
+                <div class="stat-box"><div class="label">Decorator Points</div><div class="value">${item.points}</div></div>
+                <div class="stat-box"><div class="label">GD Nametag</div><div class="value">${item.nametag}</div></div>
+            </div>
+        `;
+    }
+}
+
+// ADMIN MODAL & AUTHENTICATION
+function initAdminModal() {
+    if (!openAdminBtn || !adminModal) return;
+
+    openAdminBtn.addEventListener('click', () => {
+        adminModal.classList.remove('hidden');
+    });
+
+    closeAdminBtn.addEventListener('click', () => {
+        adminModal.classList.add('hidden');
+    });
+
+    adminLoginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pass = adminPassInput.value;
+        if (pass === 'admin123') { // Cambia esto por tu contraseña deseada
+            isAdminLoggedIn = true;
+            adminAuthView.classList.add('hidden');
+            adminDashView.classList.remove('hidden');
+            adminPassInput.value = '';
+            renderAdminPanel(currentTab, null);
+        } else {
+            alert('Contraseña incorrecta');
+        }
+    });
+
+    adminLogoutBtn.addEventListener('click', () => {
+        isAdminLoggedIn = false;
+        adminDashView.classList.add('hidden');
+        adminAuthView.classList.remove('hidden');
+        adminModal.classList.add('hidden');
+    });
+}
+
+function renderAdminPanel(tab, itemId) {
+    if (!adminContentArea) return;
+    adminContentArea.innerHTML = `<p style="color:#94a3b8; font-size:13px;">Panel de administración activo para pestaña: <strong>${tabTitles[tab]}</strong></p>`;
+}
