@@ -1,7 +1,13 @@
 // CONFIGURACIÓN SUPABASE
 const SUPABASE_URL = 'https://odplxttonqezginqqtsh.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VbXEFCQJvfFhPR0PCRurSQ_Gqpkayr1';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase = null;
+
+if (window.supabase) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+    console.error("Supabase no se cargó. Asegúrate de tener el script de Supabase en tu HTML.");
+}
 
 // Estructura de datos global
 let dataStore = {
@@ -11,8 +17,9 @@ let dataStore = {
     decorators: []
 };
 
-// Cargar datos en vivo desde la nube (Supabase)
+// Cargar datos
 async function loadDataStore() {
+    if (!supabase) return;
     try {
         const { data, error } = await supabase
             .from('bll_data')
@@ -34,8 +41,9 @@ async function loadDataStore() {
     }
 }
 
-// Guardar cambios directamente en Supabase
+// Guardar datos
 async function saveDataStore() {
+    if (!supabase) return;
     try {
         const { error } = await supabase
             .from('bll_data')
@@ -48,7 +56,6 @@ async function saveDataStore() {
     }
 }
 
-// Helper para formatear URLs de YouTube
 function formatYouTubeEmbedUrl(url) {
     if (!url) return '';
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -62,7 +69,7 @@ let selectedItemId = null;
 let editingItemId = null;
 let isAdminLoggedIn = false;
 
-// DOM Elements
+// DOM Elements (Se buscan de forma segura)
 const listContainer = document.getElementById('list-container');
 const detailCard = document.getElementById('detail-card');
 const sectionTitle = document.getElementById('section-title');
@@ -79,7 +86,6 @@ const adminPassInput = document.getElementById('admin-pass-input');
 const adminLogoutBtn = document.getElementById('admin-logout-btn');
 const adminContentArea = document.getElementById('admin-content-area');
 
-// TAB NAMES MAP
 const tabTitles = {
     'main': 'Main List (Top 1-100)',
     'extended': 'Extended List',
@@ -90,7 +96,6 @@ const tabTitles = {
     'decorators': 'Decorators Leaderboard'
 };
 
-// INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
     await loadDataStore();
     initTabs();
@@ -99,13 +104,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderContent();
 });
 
-// DESELECCIONAR AL HACER CLIC FUERA
 function initClickOutside() {
     document.addEventListener('click', (e) => {
         const isClickInsideCard = e.target.closest('.list-card');
         const isClickInsideAdmin = e.target.closest('#admin-modal') || e.target.closest('#open-admin-btn');
         const isClickInsideNav = e.target.closest('.nav-tab');
-        const isClickInsideDetail = e.target.closest('#details-sidebar');
+        const isClickInsideDetail = e.target.closest('#details-sidebar') || e.target.closest('#detail-card');
 
         if (!isClickInsideCard && !isClickInsideAdmin && !isClickInsideNav && !isClickInsideDetail) {
             clearSelection();
@@ -117,25 +121,36 @@ function clearSelection() {
     selectedItemId = null;
     editingItemId = null;
     document.querySelectorAll('.list-card').forEach(c => c.classList.remove('active'));
-    detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
+    
+    if (detailCard) {
+        detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
+    }
     
     if (isAdminLoggedIn) {
         renderAdminPanel(currentTab, null);
     }
 }
 
-// TAB SYSTEM
 function initTabs() {
     navTabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             navTabs.forEach(t => t.classList.remove('active'));
-            e.target.classList.add('active');
+            // Usamos currentTarget para evitar bugs si haces clic en un span dentro del tab
+            const targetTab = e.currentTarget;
+            targetTab.classList.add('active');
             
-            currentTab = e.target.getAttribute('data-tab');
-            sectionTitle.textContent = tabTitles[currentTab] || 'Bodrio Level List';
+            currentTab = targetTab.getAttribute('data-tab');
+            
+            if (sectionTitle) {
+                sectionTitle.textContent = tabTitles[currentTab] || 'Bodrio Level List';
+            }
+            
             selectedItemId = null;
             editingItemId = null;
-            detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
+            
+            if (detailCard) {
+                detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
+            }
             
             renderContent();
             
@@ -151,9 +166,9 @@ function getItemCategory() {
     if (currentTab === 'top-players') return 'topPlayers';
     if (currentTab === 'verifiers') return 'verifiers';
     if (currentTab === 'decorators') return 'decorators';
+    return 'levels';
 }
 
-// REORDENAR POSICIONES AUTOMÁTICAMENTE
 function shiftRanksOnInsert(targetList, newRank, ignoreId = null) {
     targetList.forEach(item => {
         if (item.id !== ignoreId && item.rank >= newRank) {
@@ -169,8 +184,9 @@ function reorderRanks(targetList) {
     });
 }
 
-// RENDER LIST CONTENT
 function renderContent() {
+    if (!listContainer) return; // Evita el crash visual del video
+    
     listContainer.innerHTML = '';
     let items = [];
 
@@ -193,8 +209,10 @@ function renderContent() {
     }
 
     if (items.length === 0) {
-        listContainer.innerHTML = '<p style="color:#64748b; padding:20px;">No hay datos registrados en esta sección aún.</p>';
-        detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
+        listContainer.innerHTML = '<p style="color:#64748b; padding:20px; text-align:center;">No hay datos registrados en esta sección aún.</p>';
+        if (detailCard) {
+            detailCard.innerHTML = '<p class="select-prompt">Selecciona un elemento para ver detalles.</p>';
+        }
     } else if (!selectedItemId && items.length > 0) {
         selectItem(items[0]);
     }
@@ -294,16 +312,18 @@ function renderDecoratorsList(items) {
 }
 
 function selectItem(item) {
-    if (!item) return;
+    if (!item || !detailCard) return;
     selectedItemId = item.id;
     
     const category = getItemCategory();
     const items = category === 'levels' ? dataStore.levels.filter(l => l.tab === currentTab) : dataStore[category];
     const activeIndex = items.findIndex(i => i.id === item.id);
     
-    const cards = Array.from(listContainer.children);
-    cards.forEach(c => c.classList.remove('active'));
-    if (cards[activeIndex]) cards[activeIndex].classList.add('active');
+    if (listContainer) {
+        const cards = Array.from(listContainer.children);
+        cards.forEach(c => c.classList.remove('active'));
+        if (cards[activeIndex]) cards[activeIndex].classList.add('active');
+    }
 
     if (['main', 'extended', 'legacy', 'hot'].includes(currentTab)) {
         let badgeClass = 'badge-legal';
@@ -358,39 +378,39 @@ function selectItem(item) {
     }
 }
 
-// ADMIN MODAL & AUTHENTICATION
+// ADMIN MODAL & AUTHENTICATION (Cargado con ?. para evitar crashes)
 function initAdminModal() {
-    if (!openAdminBtn || !adminModal) return;
+    if (!adminModal) return;
 
-    openAdminBtn.addEventListener('click', () => {
+    openAdminBtn?.addEventListener('click', () => {
         adminModal.classList.remove('hidden');
         if (isAdminLoggedIn) {
             renderAdminPanel(currentTab, selectedItemId);
         }
     });
 
-    closeAdminBtn.addEventListener('click', () => {
+    closeAdminBtn?.addEventListener('click', () => {
         adminModal.classList.add('hidden');
     });
 
-    adminLoginForm.addEventListener('submit', (e) => {
+    adminLoginForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const pass = adminPassInput.value;
+        const pass = adminPassInput?.value;
         if (pass === 'G7!mR9#pL2$xQ4&wT8@vK') {
             isAdminLoggedIn = true;
-            adminAuthView.classList.add('hidden');
-            adminDashView.classList.remove('hidden');
-            adminPassInput.value = '';
+            adminAuthView?.classList.add('hidden');
+            adminDashView?.classList.remove('hidden');
+            if (adminPassInput) adminPassInput.value = '';
             renderAdminPanel(currentTab, selectedItemId);
         } else {
             alert('Contraseña incorrecta');
         }
     });
 
-    adminLogoutBtn.addEventListener('click', () => {
+    adminLogoutBtn?.addEventListener('click', () => {
         isAdminLoggedIn = false;
-        adminDashView.classList.add('hidden');
-        adminAuthView.classList.remove('hidden');
+        adminDashView?.classList.add('hidden');
+        adminAuthView?.classList.remove('hidden');
         adminModal.classList.add('hidden');
     });
 }
@@ -493,18 +513,18 @@ function renderLevelForm(item, currentTab) {
         reorderRanks(currentCategoryLevels);
         await saveDataStore();
         renderContent();
-        adminModal.classList.add('hidden');
+        if(adminModal) adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', async () => {
+        document.getElementById('btn-delete-item')?.addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar "${item.name}"?`)) {
                 dataStore.levels = dataStore.levels.filter(l => l.id !== item.id);
                 reorderRanks(dataStore.levels.filter(l => l.tab === currentTab));
                 await saveDataStore();
                 clearSelection();
                 renderContent();
-                adminModal.classList.add('hidden');
+                if(adminModal) adminModal.classList.add('hidden');
             }
         });
     }
@@ -576,18 +596,18 @@ function renderPlayerForm(item) {
         reorderRanks(dataStore.topPlayers);
         await saveDataStore();
         renderContent();
-        adminModal.classList.add('hidden');
+        if(adminModal) adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', async () => {
+        document.getElementById('btn-delete-item')?.addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.topPlayers = dataStore.topPlayers.filter(p => p.id !== item.id);
                 reorderRanks(dataStore.topPlayers);
                 await saveDataStore();
                 clearSelection();
                 renderContent();
-                adminModal.classList.add('hidden');
+                if(adminModal) adminModal.classList.add('hidden');
             }
         });
     }
@@ -647,18 +667,18 @@ function renderVerifierForm(item) {
         reorderRanks(dataStore.verifiers);
         await saveDataStore();
         renderContent();
-        adminModal.classList.add('hidden');
+        if(adminModal) adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', async () => {
+        document.getElementById('btn-delete-item')?.addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.verifiers = dataStore.verifiers.filter(v => v.id !== item.id);
                 reorderRanks(dataStore.verifiers);
                 await saveDataStore();
                 clearSelection();
                 renderContent();
-                adminModal.classList.add('hidden');
+                if(adminModal) adminModal.classList.add('hidden');
             }
         });
     }
@@ -713,18 +733,18 @@ function renderDecoratorForm(item) {
         reorderRanks(dataStore.decorators);
         await saveDataStore();
         renderContent();
-        adminModal.classList.add('hidden');
+        if(adminModal) adminModal.classList.add('hidden');
     });
 
     if (isEdit) {
-        document.getElementById('btn-delete-item').addEventListener('click', async () => {
+        document.getElementById('btn-delete-item')?.addEventListener('click', async () => {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.decorators = dataStore.decorators.filter(d => d.id !== item.id);
                 reorderRanks(dataStore.decorators);
                 await saveDataStore();
                 clearSelection();
                 renderContent();
-                adminModal.classList.add('hidden');
+                if(adminModal) adminModal.classList.add('hidden');
             }
         });
     }
