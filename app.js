@@ -1,13 +1,7 @@
 // BLL SYSTEM APPLICATION CODE
 
-// State Management
-let currentTab = 'main';
-let selectedItemId = null;
-let editingItemId = null;
-let isAdminLoggedIn = false;
-
-// Sample Data Stores
-const dataStore = {
+// Datos por defecto (se usan solo la primera vez si la memoria está vacía)
+const defaultData = {
     levels: [
         {
             id: 'l1',
@@ -64,6 +58,32 @@ const dataStore = {
         }
     ]
 };
+
+// Carga los datos guardados en LocalStorage o usa los predeterminados
+let dataStore = loadDataStore();
+
+function loadDataStore() {
+    const savedData = localStorage.getItem('bll_data_store');
+    if (savedData) {
+        try {
+            return JSON.parse(savedData);
+        } catch (e) {
+            console.error('Error al cargar datos guardados:', e);
+        }
+    }
+    return defaultData;
+}
+
+// Función para guardar automáticamente en LocalStorage
+function saveDataStore() {
+    localStorage.setItem('bll_data_store', JSON.stringify(dataStore));
+}
+
+// State Management
+let currentTab = 'main';
+let selectedItemId = null;
+let editingItemId = null;
+let isAdminLoggedIn = false;
 
 // DOM Elements
 const listContainer = document.getElementById('list-container');
@@ -493,6 +513,7 @@ function renderLevelForm(item, currentTab) {
             dataStore.levels.push(newLevel);
         }
 
+        saveDataStore(); // ¡Guardar cambios permanentemente!
         renderContent();
         adminModal.classList.add('hidden');
     });
@@ -502,6 +523,7 @@ function renderLevelForm(item, currentTab) {
             if (confirm(`¿Seguro que deseas eliminar "${item.name}"?`)) {
                 dataStore.levels = dataStore.levels.filter(l => l.id !== item.id);
                 reorderRanks(dataStore.levels.filter(l => l.tab === currentTab));
+                saveDataStore(); // ¡Guardar cambios permanentemente!
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -571,6 +593,7 @@ function renderPlayerForm(item) {
             });
         }
 
+        saveDataStore(); // ¡Guardar cambios permanentemente!
         renderContent();
         adminModal.classList.add('hidden');
     });
@@ -580,6 +603,7 @@ function renderPlayerForm(item) {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.topPlayers = dataStore.topPlayers.filter(p => p.id !== item.id);
                 reorderRanks(dataStore.topPlayers);
+                saveDataStore(); // ¡Guardar cambios permanentemente!
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -638,6 +662,7 @@ function renderVerifierForm(item) {
                 completions: parseInt(document.getElementById('ver-completions').value)
             });
         }
+        saveDataStore(); // ¡Guardar cambios permanentemente!
         renderContent();
         adminModal.classList.add('hidden');
     });
@@ -647,6 +672,7 @@ function renderVerifierForm(item) {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.verifiers = dataStore.verifiers.filter(v => v.id !== item.id);
                 reorderRanks(dataStore.verifiers);
+                saveDataStore(); // ¡Guardar cambios permanentemente!
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
@@ -700,6 +726,7 @@ function renderDecoratorForm(item) {
                 nametag: document.getElementById('dec-tag').value
             });
         }
+        saveDataStore(); // ¡Guardar cambios permanentemente!
         renderContent();
         adminModal.classList.add('hidden');
     });
@@ -709,6 +736,7 @@ function renderDecoratorForm(item) {
             if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
                 dataStore.decorators = dataStore.decorators.filter(d => d.id !== item.id);
                 reorderRanks(dataStore.decorators);
+                saveDataStore(); // ¡Guardar cambios permanentemente!
                 clearSelection();
                 renderContent();
                 adminModal.classList.add('hidden');
