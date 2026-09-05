@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://bodrio-level-list-official.netlify.app/
