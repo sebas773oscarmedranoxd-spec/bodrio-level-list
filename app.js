@@ -356,7 +356,7 @@ function initAdminModal() {
     adminLoginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const pass = adminPassInput.value;
-        if (pass === 'admin123') { // Cambia esto por tu contraseña deseada
+        if (pass === 'G7!mR9#pL2$xQ4&wT8@vK') { // Cambia esto por tu contraseña deseada
             isAdminLoggedIn = true;
             adminAuthView.classList.add('hidden');
             adminDashView.classList.remove('hidden');
