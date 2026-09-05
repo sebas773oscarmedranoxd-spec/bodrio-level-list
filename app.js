@@ -1,12 +1,12 @@
 // CONFIGURACIÓN SUPABASE
 const SUPABASE_URL = 'https://odplxttonqezginqqtsh.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_VbXEFCQJvfFhPR0PCRurSQ_Gqpkayr1';
-let supabase = null;
 
-if (window.supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} else {
-    console.error("Supabase no se cargó. Asegúrate de tener el script de Supabase en tu HTML.");
+// Cliente de Supabase seguro (evita duplicar la declaración de la variable)
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+if (!supabase) {
+    console.error("Supabase no se cargó correctamente en el entorno global.");
 }
 
 // Estructura de datos global
@@ -69,7 +69,7 @@ let selectedItemId = null;
 let editingItemId = null;
 let isAdminLoggedIn = false;
 
-// DOM Elements (Se buscan de forma segura)
+// DOM Elements
 const listContainer = document.getElementById('list-container');
 const detailCard = document.getElementById('detail-card');
 const sectionTitle = document.getElementById('section-title');
@@ -135,7 +135,6 @@ function initTabs() {
     navTabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             navTabs.forEach(t => t.classList.remove('active'));
-            // Usamos currentTarget para evitar bugs si haces clic en un span dentro del tab
             const targetTab = e.currentTarget;
             targetTab.classList.add('active');
             
@@ -185,7 +184,7 @@ function reorderRanks(targetList) {
 }
 
 function renderContent() {
-    if (!listContainer) return; // Evita el crash visual del video
+    if (!listContainer) return;
     
     listContainer.innerHTML = '';
     let items = [];
@@ -378,7 +377,6 @@ function selectItem(item) {
     }
 }
 
-// ADMIN MODAL & AUTHENTICATION (Cargado con ?. para evitar crashes)
 function initAdminModal() {
     if (!adminModal) return;
 
@@ -440,7 +438,6 @@ function renderAdminPanel(tab, itemId) {
     }
 }
 
-// FORMULARIO DE NIVELES
 function renderLevelForm(item, currentTab) {
     const isEdit = !!item;
     adminContentArea.innerHTML = `
@@ -530,7 +527,6 @@ function renderLevelForm(item, currentTab) {
     }
 }
 
-// FORMULARIO DE TOP PLAYERS
 function renderPlayerForm(item) {
     const isEdit = !!item;
     adminContentArea.innerHTML = `
@@ -613,7 +609,6 @@ function renderPlayerForm(item) {
     }
 }
 
-// FORMULARIO DE VERIFICADORES
 function renderVerifierForm(item) {
     const isEdit = !!item;
     adminContentArea.innerHTML = `
@@ -684,7 +679,6 @@ function renderVerifierForm(item) {
     }
 }
 
-// FORMULARIO DE DECORADORES
 function renderDecoratorForm(item) {
     const isEdit = !!item;
     adminContentArea.innerHTML = `
