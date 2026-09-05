@@ -12,8 +12,8 @@ const dataStore = {
         {
             id: 'l1',
             rank: 1,
-            name: 'Crazy Time',
-            creator: 'Fedorkaz',
+            name: 'Worry',
+            creator: 'Tú',
             verifier: 'TopPlayer',
             videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
             tag: 'LEGAL',
@@ -34,7 +34,7 @@ const dataStore = {
         {
             id: 'p1',
             rank: 1,
-            name: 'K4ttie',
+            name: 'Diamond',
             points: 5000,
             hardest: 'Acheron',
             bllHardest: 'Layout Imposible',
@@ -339,6 +339,10 @@ function selectItem(item) {
             </div>
         `;
     }
+
+    if (isAdminLoggedIn) {
+        renderAdminPanel(currentTab, selectedItemId);
+    }
 }
 
 // ADMIN MODAL & AUTHENTICATION
@@ -347,6 +351,9 @@ function initAdminModal() {
 
     openAdminBtn.addEventListener('click', () => {
         adminModal.classList.remove('hidden');
+        if (isAdminLoggedIn) {
+            renderAdminPanel(currentTab, selectedItemId);
+        }
     });
 
     closeAdminBtn.addEventListener('click', () => {
@@ -356,12 +363,12 @@ function initAdminModal() {
     adminLoginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const pass = adminPassInput.value;
-        if (pass === 'G7!mR9#pL2$xQ4&wT8@vK') { // Cambia esto por tu contraseña deseada
+        if (pass === 'G7!mR9#pL2$xQ4&wT8@vK') {
             isAdminLoggedIn = true;
             adminAuthView.classList.add('hidden');
             adminDashView.classList.remove('hidden');
             adminPassInput.value = '';
-            renderAdminPanel(currentTab, null);
+            renderAdminPanel(currentTab, selectedItemId);
         } else {
             alert('Contraseña incorrecta');
         }
@@ -377,5 +384,292 @@ function initAdminModal() {
 
 function renderAdminPanel(tab, itemId) {
     if (!adminContentArea) return;
-    adminContentArea.innerHTML = `<p style="color:#94a3b8; font-size:13px;">Panel de administración activo para pestaña: <strong>${tabTitles[tab]}</strong></p>`;
+
+    const category = getItemCategory();
+    let currentItem = null;
+
+    if (selectedItemId) {
+        if (category === 'levels') {
+            currentItem = dataStore.levels.find(l => l.id === selectedItemId);
+        } else {
+            currentItem = dataStore[category].find(i => i.id === selectedItemId);
+        }
+    }
+
+    if (['main', 'extended', 'legacy', 'hot'].includes(tab)) {
+        renderLevelForm(currentItem, tab);
+    } else if (tab === 'top-players') {
+        renderPlayerForm(currentItem);
+    } else if (tab === 'verifiers') {
+        renderVerifierForm(currentItem);
+    } else if (tab === 'decorators') {
+        renderDecoratorForm(currentItem);
+    }
 }
+
+// FORMULARIO DE NIVELES
+function renderLevelForm(item, currentTab) {
+    const isEdit = !!item;
+    adminContentArea.innerHTML = `
+        <h3>${isEdit ? 'Editar Nivel: ' + item.name : 'Añadir Nuevo Nivel'}</h3>
+        <form id="admin-level-form">
+            <label>Nombre del Nivel</label>
+            <input type="text" id="level-name" value="${item ? item.name : ''}" required>
+
+            <label>Posición / Rank (#)</label>
+            <input type="number" id="level-rank" value="${item ? item.rank : 1}" min="1" required>
+
+            <label>Creador</label>
+            <input type="text" id="level-creator" value="${item ? item.creator : ''}" required>
+
+            <label>Verificador</label>
+            <input type="text" id="level-verifier" value="${item ? item.verifier : ''}" required>
+
+            <label>URL del Video (YouTube)</label>
+            <input type="url" id="level-video" value="${item ? item.videoUrl : ''}" placeholder="https://www.youtube.com/watch?v=..." required>
+
+            <label>Etiqueta / Tag</label>
+            <select id="level-tag">
+                <option value="LEGAL" ${item && item.tag === 'LEGAL' ? 'selected' : ''}>LEGAL</option>
+                <option value="ASSISTED" ${item && item.tag === 'ASSISTED' ? 'selected' : ''}>ASSISTED</option>
+                <option value="IMPOSSIBLE" ${item && item.tag === 'IMPOSSIBLE' ? 'selected' : ''}>IMPOSSIBLE</option>
+            </select>
+
+            <button type="submit" class="btn-submit">${isEdit ? 'Guardar Cambios' : 'Añadir Nivel'}</button>
+            ${isEdit ? `<button type="button" id="btn-delete-item" class="btn-secondary" style="background:#dc2626; margin-top:8px;">Eliminar Nivel</button>` : ''}
+        </form>
+    `;
+
+    document.getElementById('admin-level-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('level-name').value;
+        const rank = parseInt(document.getElementById('level-rank').value);
+        const creator = document.getElementById('level-creator').value;
+        const verifier = document.getElementById('level-verifier').value;
+        const videoUrl = document.getElementById('level-video').value;
+        const tag = document.getElementById('level-tag').value;
+
+        if (isEdit) {
+            item.name = name;
+            item.rank = rank;
+            item.creator = creator;
+            item.verifier = verifier;
+            item.videoUrl = videoUrl;
+            item.tag = tag;
+        } else {
+            const newLevel = {
+                id: 'l' + Date.now(),
+                rank,
+                name,
+                creator,
+                verifier,
+                videoUrl,
+                tag,
+                tab: currentTab
+            };
+            dataStore.levels.push(newLevel);
+        }
+
+        renderContent();
+        adminModal.classList.add('hidden');
+    });
+
+    if (isEdit) {
+        document.getElementById('btn-delete-item').addEventListener('click', () => {
+            if (confirm(`¿Seguro que deseas eliminar "${item.name}"?`)) {
+                dataStore.levels = dataStore.levels.filter(l => l.id !== item.id);
+                clearSelection();
+                renderContent();
+                adminModal.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// FORMULARIO DE TOP PLAYERS
+function renderPlayerForm(item) {
+    const isEdit = !!item;
+    adminContentArea.innerHTML = `
+        <h3>${isEdit ? 'Editar Jugador: ' + item.name : 'Añadir Nuevo Jugador'}</h3>
+        <form id="admin-player-form">
+            <label>Nombre del Jugador</label>
+            <input type="text" id="player-name" value="${item ? item.name : ''}" required>
+
+            <label>Posición / Rank (#)</label>
+            <input type="number" id="player-rank" value="${item ? item.rank : 1}" min="1" required>
+
+            <label>Puntos (Points)</label>
+            <input type="number" id="player-points" value="${item ? item.points : 0}" required>
+
+            <label>Hardest (Global)</label>
+            <input type="text" id="player-hardest" value="${item ? item.hardest : ''}" required>
+
+            <label>BLL Hardest</label>
+            <input type="text" id="player-bll-hardest" value="${item ? item.bllHardest : ''}" required>
+
+            <label>Niveles Pasados (Total Beaten)</label>
+            <input type="number" id="player-beaten" value="${item ? item.beaten : 0}" required>
+
+            <label>Enlace a YouTube / Media</label>
+            <input type="url" id="player-media" value="${item ? item.media : ''}">
+
+            <button type="submit" class="btn-submit">${isEdit ? 'Guardar Cambios' : 'Añadir Jugador'}</button>
+            ${isEdit ? `<button type="button" id="btn-delete-item" class="btn-secondary" style="background:#dc2626; margin-top:8px;">Eliminar Jugador</button>` : ''}
+        </form>
+    `;
+
+    document.getElementById('admin-player-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('player-name').value;
+        const rank = parseInt(document.getElementById('player-rank').value);
+        const points = parseInt(document.getElementById('player-points').value);
+        const hardest = document.getElementById('player-hardest').value;
+        const bllHardest = document.getElementById('player-bll-hardest').value;
+        const beaten = parseInt(document.getElementById('player-beaten').value);
+        const media = document.getElementById('player-media').value;
+
+        if (isEdit) {
+            item.name = name;
+            item.rank = rank;
+            item.points = points;
+            item.hardest = hardest;
+            item.bllHardest = bllHardest;
+            item.beaten = beaten;
+            item.media = media;
+        } else {
+            dataStore.topPlayers.push({
+                id: 'p' + Date.now(),
+                rank, name, points, hardest, bllHardest, beaten, media
+            });
+        }
+
+        renderContent();
+        adminModal.classList.add('hidden');
+    });
+
+    if (isEdit) {
+        document.getElementById('btn-delete-item').addEventListener('click', () => {
+            if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
+                dataStore.topPlayers = dataStore.topPlayers.filter(p => p.id !== item.id);
+                clearSelection();
+                renderContent();
+                adminModal.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// FORMULARIO DE VERIFICADORES
+function renderVerifierForm(item) {
+    const isEdit = !!item;
+    adminContentArea.innerHTML = `
+        <h3>${isEdit ? 'Editar Verificador: ' + item.name : 'Añadir Verificador'}</h3>
+        <form id="admin-verifier-form">
+            <label>Nombre</label>
+            <input type="text" id="ver-name" value="${item ? item.name : ''}" required>
+
+            <label>Rank (#)</label>
+            <input type="number" id="ver-rank" value="${item ? item.rank : 1}" required>
+
+            <label>Puntos</label>
+            <input type="number" id="ver-points" value="${item ? item.points : 0}" required>
+
+            <label>Hardest</label>
+            <input type="text" id="ver-hardest" value="${item ? item.hardest : ''}" required>
+
+            <label>Niveles BLL Verificados</label>
+            <input type="number" id="ver-completions" value="${item ? item.completions : 0}" required>
+
+            <button type="submit" class="btn-submit">${isEdit ? 'Guardar Cambios' : 'Añadir Verificador'}</button>
+            ${isEdit ? `<button type="button" id="btn-delete-item" class="btn-secondary" style="background:#dc2626; margin-top:8px;">Eliminar</button>` : ''}
+        </form>
+    `;
+
+    document.getElementById('admin-verifier-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (isEdit) {
+            item.name = document.getElementById('ver-name').value;
+            item.rank = parseInt(document.getElementById('ver-rank').value);
+            item.points = parseInt(document.getElementById('ver-points').value);
+            item.hardest = document.getElementById('ver-hardest').value;
+            item.completions = parseInt(document.getElementById('ver-completions').value);
+        } else {
+            dataStore.verifiers.push({
+                id: 'v' + Date.now(),
+                rank: parseInt(document.getElementById('ver-rank').value),
+                name: document.getElementById('ver-name').value,
+                points: parseInt(document.getElementById('ver-points').value),
+                hardest: document.getElementById('ver-hardest').value,
+                completions: parseInt(document.getElementById('ver-completions').value)
+            });
+        }
+        renderContent();
+        adminModal.classList.add('hidden');
+    });
+
+    if (isEdit) {
+        document.getElementById('btn-delete-item').addEventListener('click', () => {
+            if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
+                dataStore.verifiers = dataStore.verifiers.filter(v => v.id !== item.id);
+                clearSelection();
+                renderContent();
+                adminModal.classList.add('hidden');
+            }
+        });
+    }
+}
+
+// FORMULARIO DE DECORADORES
+function renderDecoratorForm(item) {
+    const isEdit = !!item;
+    adminContentArea.innerHTML = `
+        <h3>${isEdit ? 'Editar Decorador: ' + item.name : 'Añadir Decorador'}</h3>
+        <form id="admin-decorator-form">
+            <label>Nombre</label>
+            <input type="text" id="dec-name" value="${item ? item.name : ''}" required>
+
+            <label>Rank (#)</label>
+            <input type="number" id="dec-rank" value="${item ? item.rank : 1}" required>
+
+            <label>Puntos</label>
+            <input type="number" id="dec-points" value="${item ? item.points : 0}" required>
+
+            <label>Nametag en GD</label>
+            <input type="text" id="dec-tag" value="${item ? item.nametag : ''}" required>
+
+            <button type="submit" class="btn-submit">${isEdit ? 'Guardar Cambios' : 'Añadir Decorador'}</button>
+            ${isEdit ? `<button type="button" id="btn-delete-item" class="btn-secondary" style="background:#dc2626; margin-top:8px;">Eliminar</button>` : ''}
+        </form>
+    `;
+
+    document.getElementById('admin-decorator-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (isEdit) {
+            item.name = document.getElementById('dec-name').value;
+            item.rank = parseInt(document.getElementById('dec-rank').value);
+            item.points = parseInt(document.getElementById('dec-points').value);
+            item.nametag = document.getElementById('dec-tag').value;
+        } else {
+            dataStore.decorators.push({
+                id: 'd' + Date.now(),
+                rank: parseInt(document.getElementById('dec-rank').value),
+                name: document.getElementById('dec-name').value,
+                points: parseInt(document.getElementById('dec-points').value),
+                nametag: document.getElementById('dec-tag').value
+            });
+        }
+        renderContent();
+        adminModal.classList.add('hidden');
+    });
+
+    if (isEdit) {
+        document.getElementById('btn-delete-item').addEventListener('click', () => {
+            if (confirm(`¿Seguro que deseas eliminar a "${item.name}"?`)) {
+                dataStore.decorators = dataStore.decorators.filter(d => d.id !== item.id);
+                clearSelection();
+                renderContent();
+                adminModal.classList.add('hidden');
+            }
+        });
+    }
+} 
